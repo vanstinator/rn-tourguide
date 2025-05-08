@@ -7,6 +7,7 @@ import {
   StyleSheet,
   View,
   ViewStyle,
+  Dimensions,
 } from 'react-native'
 import { BorderRadiusObject, IStep, Labels, ValueXY } from '../types'
 import styles, { MARGIN } from './style'
@@ -104,8 +105,30 @@ export class Modal extends React.Component<ModalProps, State> {
     tooltipHeight: undefined,
   }
 
+  dimensionsListener: any
+  resizeKey: number = 0
+
   constructor(props: ModalProps) {
     super(props)
+    this.handleResize = this.handleResize.bind(this)
+  }
+
+  componentDidMount() {
+    this.dimensionsListener = Dimensions.addEventListener('change', this.handleResize)
+  }
+
+  componentWillUnmount() {
+    if (this.dimensionsListener && this.dimensionsListener.remove) {
+      this.dimensionsListener.remove()
+    } else if (this.dimensionsListener) {
+      Dimensions.removeEventListener('change', this.handleResize)
+    }
+  }
+
+  handleResize(_: any) {
+    // Increment a dummy key to force a re-render
+    this.resizeKey++;
+    this.setState({});
   }
 
   componentDidUpdate(prevProps: ModalProps) {
@@ -365,6 +388,30 @@ export class Modal extends React.Component<ModalProps, State> {
     ) : null
   }
 
+  handleOverlayLayout = (event: LayoutChangeEvent) => {
+    // Log the new layout size
+    const { width, height } = event.nativeEvent.layout;
+    console.log('Overlay onLayout:', { width, height });
+    // Re-measure the current step's target if available
+    if (this.props.currentStep && this.props.currentStep.target && this.props.currentStep.target.measure) {
+      this.props.currentStep.target.measure().then((size: any) => {
+        console.log('Re-measured step target on layout:', size);
+        this.setState({
+          size: { x: size.width, y: size.height },
+          position: { x: size.x, y: size.y },
+        }, () => {
+          // Also recompute tooltip position
+          this._animateMove({
+            top: size.y,
+            left: size.x,
+            width: size.width,
+            height: size.height,
+          });
+        });
+      });
+    }
+  }
+
   render() {
     const containerVisible = this.state.containerVisible || this.props.visible
     const contentVisible = this.state.layout && containerVisible
@@ -373,11 +420,12 @@ export class Modal extends React.Component<ModalProps, State> {
     }
     return (
       <View
-        style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent' }]}
+        style={[StyleSheet.absoluteFillObject, { backgroundColor: 'transparent' }]}
         pointerEvents='box-none'
+        onLayout={this.handleOverlayLayout}
       >
         <View
-          style={styles.container}
+          style={[StyleSheet.absoluteFillObject, styles.container]}
           onLayout={this.handleLayoutChange}
           pointerEvents='box-none'
         >

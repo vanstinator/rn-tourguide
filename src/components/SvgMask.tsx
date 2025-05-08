@@ -5,10 +5,11 @@ import {
   Easing,
   LayoutChangeEvent,
   Platform,
-  Pressable,
   ScaledSize,
   StyleProp,
   ViewStyle,
+  View,
+  TouchableWithoutFeedback,
 } from 'react-native'
 import Svg, { PathProps } from 'react-native-svg'
 import { IStep, ValueXY } from '../types'
@@ -54,6 +55,7 @@ export class SvgMask extends Component<Props, State> {
 
   windowDimensions: ScaledSize | null = null
   firstPath: string | undefined
+  dimensionsListener: any
 
   constructor(props: Props) {
     super(props)
@@ -82,6 +84,11 @@ export class SvgMask extends Component<Props, State> {
     }
 
     this.listenerID = this.state.animation.addListener(this.animationListener)
+    this.handleResize = this.handleResize.bind(this)
+  }
+
+  componentDidMount() {
+    this.dimensionsListener = Dimensions.addEventListener('change', this.handleResize)
   }
 
   componentDidUpdate(prevProps: Props) {
@@ -100,6 +107,25 @@ export class SvgMask extends Component<Props, State> {
     if (this.rafID) {
       cancelAnimationFrame(this.rafID)
     }
+    if (this.dimensionsListener && this.dimensionsListener.remove) {
+      this.dimensionsListener.remove()
+    } else if (this.dimensionsListener) {
+      Dimensions.removeEventListener('change', this.handleResize)
+    }
+  }
+
+  handleResize({ window, screen }: { window: ScaledSize; screen: ScaledSize }) {
+    const dims = Platform.select({
+      android: screen,
+      default: window,
+    })
+    this.setState({
+      canvasSize: {
+        x: dims.width,
+        y: dims.height,
+      },
+      previousPath: `M0,0H${dims.width}V${dims.height}H0V0ZM${dims.width / 2},${dims.height / 2} h 1 v 1 h -1 Z`,
+    })
   }
 
   getPath = () => {
@@ -186,28 +212,56 @@ export class SvgMask extends Component<Props, State> {
     }
     const { dismissOnPress, stop } = this.props
 
-    return (
-      <Pressable
-        style={this.props.style}
-        onLayout={this.handleLayout}
-        pointerEvents={dismissOnPress ? undefined : 'none'}
-        onPress={dismissOnPress ? stop : undefined}
-      >
-        <Svg
-          pointerEvents='none'
-          width={this.state.canvasSize.x}
-          height={this.state.canvasSize.y}
+    if (dismissOnPress) {
+      return (
+        <TouchableWithoutFeedback onPress={stop}>
+          <View
+            style={this.props.style as any}
+            onLayout={this.handleLayout}
+            pointerEvents={undefined}
+          >
+            <Svg
+              pointerEvents='none'
+              width={this.state.canvasSize.x}
+              height={this.state.canvasSize.y}
+            >
+              {/* @ts-ignore: AnimatedSvgPath is a valid JSX component */}
+              <AnimatedSvgPath
+                ref={this.mask as any}
+                fill={this.props.backdropColor}
+                strokeWidth={0}
+                fillRule='evenodd'
+                d={this.firstPath}
+                opacity={this.state.opacity as any}
+              />
+            </Svg>
+          </View>
+        </TouchableWithoutFeedback>
+      )
+    } else {
+      return (
+        <View
+          style={this.props.style as any}
+          onLayout={this.handleLayout}
+          pointerEvents={'none'}
         >
-          <AnimatedSvgPath
-            ref={this.mask}
-            fill={this.props.backdropColor}
-            strokeWidth={0}
-            fillRule='evenodd'
-            d={this.firstPath}
-            opacity={this.state.opacity as any}
-          />
-        </Svg>
-      </Pressable>
-    )
+          <Svg
+            pointerEvents='none'
+            width={this.state.canvasSize.x}
+            height={this.state.canvasSize.y}
+          >
+            {/* @ts-ignore: AnimatedSvgPath is a valid JSX component */}
+            <AnimatedSvgPath
+              ref={this.mask as any}
+              fill={this.props.backdropColor}
+              strokeWidth={0}
+              fillRule='evenodd'
+              d={this.firstPath}
+              opacity={this.state.opacity as any}
+            />
+          </Svg>
+        </View>
+      )
+    }
   }
 }
