@@ -5,6 +5,7 @@ import {
   TourGuideZoneByPosition,
   TourGuideZoneByPositionProps,
 } from '../components/TourGuideZoneByPosition'
+import { ScrollView } from 'react-native'
 
 export const useTourGuideController = (tourKey?: string) => {
   const { start, canStart, stop, eventEmitter, getCurrentStep, setTourKey } =
@@ -12,12 +13,12 @@ export const useTourGuideController = (tourKey?: string) => {
 
   const key = tourKey ?? '_default'
 
-  const _start = (fromStep?: number) => {
+  const _start = (fromStep?: number, scrollRef?: ScrollView | null) => {
     if (setTourKey) {
       setTourKey(key)
     }
     if (start) {
-      start(key, fromStep)
+      start(key, fromStep, scrollRef)
     }
   }
   const _stop = () => {

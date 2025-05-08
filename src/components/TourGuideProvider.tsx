@@ -1,6 +1,6 @@
 import mitt, { Emitter } from 'mitt'
 import * as React from 'react'
-import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
+import { findNodeHandle, ScrollView, StyleProp, StyleSheet, View, ViewStyle, UIManager } from 'react-native'
 import { TourGuideContext, Ctx } from './TourGuideContext'
 import { useIsMounted } from '../hooks/useIsMounted'
 import { IStep, Labels, StepObject, Steps } from '../types'
@@ -10,6 +10,10 @@ import { OFFSET_WIDTH } from './style'
 import { TooltipProps } from './Tooltip'
 
 const { useMemo, useEffect, useState, useRef } = React
+
+// Type that can be either a ScrollView or a ref to one
+type ScrollViewRef = ScrollView | React.RefObject<ScrollView>
+
 /*
 This is the maximum wait time for the steps to be registered before starting the tutorial
 At 60fps means 2 seconds
@@ -49,6 +53,7 @@ export const TourGuideProvider = ({
   dismissOnPress = false,
   preventOutsideInteraction = false,
 }: TourGuideProviderProps) => {
+  const [scrollRef, setScrollRef] = useState<ScrollViewRef | null>(null)
   const [tourKey, setTourKey] = useState<string | '_default'>('_default')
   const [visible, updateVisible] = useState<Ctx<boolean | undefined>>({
     _default: false,
@@ -94,6 +99,7 @@ export const TourGuideProvider = ({
           (Array.isArray(steps[tourKey]) && steps[tourKey].length > 0) ||
           Object.entries(steps[tourKey]).length > 0
         ) {
+          console.log('steps[tourKey]', steps[tourKey])
           setCanStart((obj) => {
             const newObj = { ...obj }
             newObj[tourKey] = true
@@ -134,16 +140,56 @@ export const TourGuideProvider = ({
     })
   }
 
-  const setCurrentStep = (key: string, step?: IStep) =>
+  const setCurrentStep = async (key: string, step?: IStep) =>
     new Promise<void>((resolve) => {
-      updateCurrentStep((currentStep) => {
-        const newStep = { ...currentStep }
-        newStep[key] = step
-        eventEmitter[key]?.emit('stepChange', step)
-        return newStep
-      })
-      resolve()
+      if (!step) {
+        updateCurrentStep((currentStep) => {
+          const newStep = { ...currentStep }
+          newStep[key] = step
+          eventEmitter[key]?.emit('stepChange', step)
+          return newStep
+        })
+        return resolve()
+      }
+
+      const scrollViewRef = scrollRef && 'current' in scrollRef ? scrollRef.current : scrollRef
+      const wrapperRef = step.wrapper && 'current' in step.wrapper ? step.wrapper.current : step.wrapper
+
+      const wrapperNode = findNodeHandle(wrapperRef)
+      const scrollNode = findNodeHandle(scrollViewRef)
+
+      if (wrapperNode && scrollNode && scrollViewRef && typeof scrollViewRef.scrollTo === 'function') {
+        UIManager.measureLayout(
+          wrapperNode,
+          scrollNode,
+          () => {
+            console.warn('TourGuide: Failed to measure layout with UIManager.measureLayout')
+          },
+          (_x: number, y: number, _w: number, h: number) => {
+            const yOffset = y > 0 ? y - h / 4 : 0
+            scrollViewRef.scrollTo({ y: yOffset, animated: true })
+          }
+        )
+        setTimeout(() => {
+          updateCurrentStep((currentStep) => {
+            const newStep = { ...currentStep }
+            newStep[key] = step
+            eventEmitter[key]?.emit('stepChange', step)
+            return newStep
+          })
+          resolve()
+        }, 200)
+      } else {
+        updateCurrentStep((currentStep) => {
+          const newStep = { ...currentStep }
+          newStep[key] = step
+          eventEmitter[key]?.emit('stepChange', step)
+          return newStep
+        })
+        resolve()
+      }
     })
+
 
   const getNextStep = (
     key: string,
@@ -213,7 +259,11 @@ export const TourGuideProvider = ({
 
   const getCurrentStep = (key: string) => currentStep[key]
 
-  const start = async (key: string, fromStep?: number) => {
+  const start = async (key: string, fromStep?: number, _scrollRef: ScrollView | null = null) => {
+    if (_scrollRef !== null) {
+      setScrollRef(_scrollRef)
+    }
+
     const currentStep = fromStep
       ? (steps[key] as StepObject)[fromStep]
       : getFirstStep(key)
@@ -224,7 +274,7 @@ export const TourGuideProvider = ({
     }
     if (!currentStep) {
       startTries.current += 1
-      requestAnimationFrame(() => start(key, fromStep))
+      requestAnimationFrame(() => start(key, fromStep, _scrollRef))
     } else {
       eventEmitter[key]?.emit('start')
       await setCurrentStep(key, currentStep!)
