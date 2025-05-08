@@ -3,8 +3,6 @@ import {
   Animated,
   Easing,
   LayoutChangeEvent,
-  Platform,
-  StatusBar,
   StyleProp,
   StyleSheet,
   View,
@@ -14,8 +12,10 @@ import { BorderRadiusObject, IStep, Labels, ValueXY } from '../types'
 import styles, { MARGIN } from './style'
 import { SvgMask } from './SvgMask'
 import { Tooltip, TooltipProps } from './Tooltip'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 declare var __TEST__: boolean
+
 
 export interface ModalProps {
   ref: any
@@ -38,6 +38,7 @@ export interface ModalProps {
   next: () => void
   prev: () => void
   preventOutsideInteraction?: boolean
+  safeAreaInsets: { top: number; bottom: number }
 }
 
 interface Layout {
@@ -59,6 +60,7 @@ interface State {
   tooltipTranslateY: Animated.Value
   opacity: Animated.Value
   currentStep?: IStep
+  tooltipHeight?: number
 }
 
 interface Move {
@@ -99,6 +101,7 @@ export class Modal extends React.Component<ModalProps, State> {
     size: undefined,
     position: undefined,
     currentStep: undefined,
+    tooltipHeight: undefined,
   }
 
   constructor(props: ModalProps) {
@@ -139,6 +142,13 @@ export class Modal extends React.Component<ModalProps, State> {
     })
   }
 
+  handleTooltipLayout = (event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout
+    if (this.state.tooltipHeight !== height) {
+      this.setState({ tooltipHeight: height })
+    }
+  }
+
   async _animateMove(
     obj: Move = {
       top: 0,
@@ -148,9 +158,6 @@ export class Modal extends React.Component<ModalProps, State> {
     },
   ) {
     const layout = await this.measure()
-    if (!this.props.androidStatusBarVisible && Platform.OS === 'android') {
-      obj.top -= StatusBar.currentHeight || 30
-    }
 
     const center = {
       x: obj.left! + obj.width! / 2,
@@ -178,7 +185,7 @@ export class Modal extends React.Component<ModalProps, State> {
     if (verticalPosition === 'bottom') {
       tooltip.top = obj.top + obj.height + MARGIN
     } else {
-      tooltip.bottom = layout.height! - (obj.top - MARGIN)
+      // tooltip.bottom = layout.height! - (obj.top - MARGIN)
     }
 
     if (horizontalPosition === 'left') {
@@ -193,13 +200,37 @@ export class Modal extends React.Component<ModalProps, State> {
     }
 
     const duration = this.props.animationDuration! + 200
-    const toValue =
-      verticalPosition === 'bottom'
-        ? tooltip.top
-        : obj.top -
-          MARGIN -
-          135 -
-          (this.props.currentStep?.tooltipBottomOffset || 0)
+    const tooltipHeight = this.state.tooltipHeight || 0
+    const minY = this.props.safeAreaInsets.top
+    const maxY = layout.height! - tooltipHeight - this.props.safeAreaInsets.bottom
+    let toValue
+    // Debug: log all relevant values
+    const debugInfo: Record<string, any> = {
+      objTop: obj.top,
+      objHeight: obj.height,
+      tooltipHeight,
+      verticalPosition,
+      minY,
+      maxY,
+    };
+    if (verticalPosition === 'bottom') {
+      const desired = obj.top + obj.height + MARGIN
+      toValue = Math.min(Math.max(desired, minY), maxY)
+      debugInfo.desired = desired;
+      debugInfo.toValue = toValue;
+      debugInfo.gap = toValue - (obj.top + obj.height);
+    } else {
+      const tooltipBottomOffset = this.props.currentStep?.tooltipBottomOffset || 0;
+      const desired = obj.top - MARGIN - tooltipHeight - tooltipBottomOffset;
+      toValue = Math.min(Math.max(desired, minY), maxY)
+      debugInfo.desired = desired;
+      debugInfo.toValue = toValue;
+      debugInfo.gap = obj.top - (toValue + tooltipHeight);
+    }
+    // Print debug info
+    // eslint-disable-next-line no-console
+    console.log('TOOLTIP DEBUG:', debugInfo);
+
     const translateAnim = Animated.timing(this.state.tooltipTranslateY, {
       toValue,
       duration,
@@ -311,15 +342,17 @@ export class Modal extends React.Component<ModalProps, State> {
           },
         ]}
       >
-        <TooltipComponent
-          isFirstStep={this.state.isFirstStep}
-          isLastStep={this.state.isLastStep}
-          currentStep={this.state.currentStep!}
-          handleNext={this.handleNext}
-          handlePrev={this.handlePrev}
-          handleStop={this.handleStop}
-          labels={this.props.labels}
-        />
+        <View onLayout={this.handleTooltipLayout}>
+          <TooltipComponent
+            isFirstStep={this.state.isFirstStep}
+            isLastStep={this.state.isLastStep}
+            currentStep={this.state.currentStep!}
+            handleNext={this.handleNext}
+            handlePrev={this.handlePrev}
+            handleStop={this.handleStop}
+            labels={this.props.labels}
+          />
+        </View>
       </Animated.View>
     )
   }
@@ -359,4 +392,14 @@ export class Modal extends React.Component<ModalProps, State> {
       </View>
     )
   }
+}
+
+export function ModalWithInsets(props: Omit<ModalProps, 'safeAreaInsets'>) {
+  const insets = useSafeAreaInsets();
+  // Always use insets, fallback to 24 if not available
+  const safeAreaInsets = {
+    top: typeof insets.top === 'number' ? insets.top : 24,
+    bottom: typeof insets.bottom === 'number' ? insets.bottom : 24,
+  };
+  return <Modal {...props} safeAreaInsets={safeAreaInsets} />;
 }

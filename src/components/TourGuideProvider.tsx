@@ -1,11 +1,11 @@
 import mitt, { Emitter } from 'mitt'
 import * as React from 'react'
-import { findNodeHandle, ScrollView, StyleProp, StyleSheet, View, ViewStyle, UIManager } from 'react-native'
+import { findNodeHandle, ScrollView, StyleProp, StyleSheet, View, ViewStyle, UIManager, Easing } from 'react-native'
 import { TourGuideContext, Ctx } from './TourGuideContext'
 import { useIsMounted } from '../hooks/useIsMounted'
 import { IStep, Labels, StepObject, Steps } from '../types'
 import * as utils from '../utilities'
-import { Modal } from './Modal'
+import { ModalWithInsets } from './Modal'
 import { OFFSET_WIDTH } from './style'
 import { TooltipProps } from './Tooltip'
 
@@ -99,7 +99,6 @@ export const TourGuideProvider = ({
           (Array.isArray(steps[tourKey]) && steps[tourKey].length > 0) ||
           Object.entries(steps[tourKey]).length > 0
         ) {
-          console.log('steps[tourKey]', steps[tourKey])
           setCanStart((obj) => {
             const newObj = { ...obj }
             newObj[tourKey] = true
@@ -300,27 +299,26 @@ export const TourGuideProvider = ({
         }}
       >
         {children}
-        <Modal
+        <ModalWithInsets
           ref={modal}
-          {...{
-            next,
-            prev,
-            stop,
-            visible: visible[tourKey],
-            isFirstStep: isFirstStep[tourKey],
-            isLastStep: isLastStep[tourKey],
-            currentStep: currentStep[tourKey],
-            labels,
-            tooltipComponent,
-            tooltipStyle,
-            androidStatusBarVisible,
-            backdropColor,
-            animationDuration,
-            maskOffset,
-            borderRadius,
-            dismissOnPress,
-            preventOutsideInteraction,
-          }}
+          next={next}
+          prev={prev}
+          stop={stop}
+          visible={visible[tourKey]}
+          isFirstStep={isFirstStep[tourKey]}
+          isLastStep={isLastStep[tourKey]}
+          currentStep={currentStep[tourKey]}
+          labels={labels || {}}
+          tooltipComponent={tooltipComponent || (() => null)}
+          tooltipStyle={tooltipStyle}
+          androidStatusBarVisible={androidStatusBarVisible ?? false}
+          backdropColor={backdropColor ?? 'rgba(0, 0, 0, 0.4)'}
+          animationDuration={animationDuration}
+          maskOffset={maskOffset}
+          borderRadius={borderRadius}
+          dismissOnPress={dismissOnPress}
+          preventOutsideInteraction={preventOutsideInteraction}
+          easing={Easing.elastic(0.7)}
         />
       </TourGuideContext.Provider>
     </View>
