@@ -270,7 +270,7 @@ export const TourGuideProvider = ({
 
   const getCurrentStep = (key: string) => currentStep[key]
 
-  const start = async (key: string, fromStep?: number, _scrollRef: ScrollView | null = null) => {
+  const start = async (key: string, fromStep?: number, _scrollRef: React.RefObject<ScrollView> | null = null) => {
     if (_scrollRef !== null) {
       setScrollRef(_scrollRef)
     }
