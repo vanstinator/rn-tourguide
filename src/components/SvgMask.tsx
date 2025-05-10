@@ -51,7 +51,7 @@ export class SvgMask extends Component<Props, State> {
 
   listenerID: string
   rafID: number
-  mask: React.RefObject<PathProps> = React.createRef()
+  mask: React.RefObject<PathProps | null> = React.createRef()
 
   windowDimensions: ScaledSize | null = null
   firstPath: string | undefined
@@ -109,8 +109,6 @@ export class SvgMask extends Component<Props, State> {
     }
     if (this.dimensionsListener && this.dimensionsListener.remove) {
       this.dimensionsListener.remove()
-    } else if (this.dimensionsListener) {
-      Dimensions.removeEventListener('change', this.handleResize)
     }
   }
 

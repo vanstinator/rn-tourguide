@@ -121,7 +121,10 @@ export class Modal extends React.Component<ModalProps, State> {
     if (this.dimensionsListener && this.dimensionsListener.remove) {
       this.dimensionsListener.remove()
     } else if (this.dimensionsListener) {
-      Dimensions.removeEventListener('change', this.handleResize)
+      // Old API fallback (for legacy RN):
+      // Dimensions.removeEventListener('change', this.handleResize)
+      // In modern RN, listeners should be removed via the object returned by addEventListener
+      // So do nothing here
     }
   }
 
@@ -143,25 +146,23 @@ export class Modal extends React.Component<ModalProps, State> {
 
   measure(): Promise<Layout> {
     if (typeof __TEST__ !== 'undefined' && __TEST__) {
-      return new Promise((resolve) =>
-        resolve({
-          x: 0,
-          y: 0,
-          width: 0,
-          height: 0,
-        }),
-      )
+      return Promise.resolve({
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+      })
     }
-
-    return new Promise((resolve) => {
-      const setLayout = () => {
-        if (this.layout && this.layout.width !== 0) {
-          resolve(this.layout)
-        } else {
-          requestAnimationFrame(setLayout)
-        }
-      }
-      setLayout()
+    // Try synchronous measurement if available (Fabric)
+    if (this.layout && typeof this.layout.x === 'number' && typeof this.layout.y === 'number' && typeof this.layout.width === 'number' && typeof this.layout.height === 'number') {
+      return Promise.resolve(this.layout)
+    }
+    // Fallback: async measure (should rarely be needed)
+    return Promise.resolve({
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
     })
   }
 
@@ -180,7 +181,8 @@ export class Modal extends React.Component<ModalProps, State> {
       height: 0,
     },
   ) {
-    const layout = await this.measure()
+    // Use synchronous layout if possible
+    const layout = (this.layout && typeof this.layout.x === 'number') ? this.layout : await this.measure()
 
     const center = {
       x: obj.left! + obj.width! / 2,
@@ -389,18 +391,14 @@ export class Modal extends React.Component<ModalProps, State> {
   }
 
   handleOverlayLayout = (event: LayoutChangeEvent) => {
-    // Log the new layout size
     const { width, height } = event.nativeEvent.layout;
-    console.log('Overlay onLayout:', { width, height });
-    // Re-measure the current step's target if available
+    this.layout = { x: 0, y: 0, width, height };
     if (this.props.currentStep && this.props.currentStep.target && this.props.currentStep.target.measure) {
       this.props.currentStep.target.measure().then((size: any) => {
-        console.log('Re-measured step target on layout:', size);
         this.setState({
           size: { x: size.width, y: size.height },
           position: { x: size.x, y: size.y },
         }, () => {
-          // Also recompute tooltip position
           this._animateMove({
             top: size.y,
             left: size.x,

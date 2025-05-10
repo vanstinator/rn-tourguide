@@ -74,11 +74,11 @@ export const TourGuideProvider = ({
   const startTries = useRef<number>(0)
   const { current: mounted } = useIsMounted()
 
-  const { current: eventEmitter } = useRef<Ctx<Emitter>>({
-    _default: new mitt(),
+  const { current: eventEmitter } = useRef<Ctx<Emitter<Record<string, unknown>>>>({
+    _default: mitt(),
   })
 
-  const modal = useRef<any>()
+  const modal = useRef<any>(null)
 
   useEffect(() => {
     if (mounted && visible[tourKey] === false) {
@@ -121,7 +121,19 @@ export const TourGuideProvider = ({
   }, [mounted, steps])
 
   const moveToCurrentStep = async (key: string) => {
-    const size = await currentStep[key]?.target.measure()
+    let size
+    if (currentStep[key]?.target && typeof currentStep[key].target.measureSync === 'function') {
+      // Use synchronous measurement if available
+      try {
+        const [x, y, width, height] = currentStep[key].target.measureSync()
+        size = { x, y, width, height }
+      } catch (e) {
+        // fallback to async
+        size = await currentStep[key]?.target.measure()
+      }
+    } else {
+      size = await currentStep[key]?.target.measure()
+    }
     if (
       size === undefined ||
       isNaN(size.width) ||
@@ -161,23 +173,22 @@ export const TourGuideProvider = ({
         UIManager.measureLayout(
           wrapperNode,
           scrollNode,
-          () => {
+          function errorCallback() {
             console.warn('TourGuide: Failed to measure layout with UIManager.measureLayout')
           },
-          (_x: number, y: number, _w: number, h: number) => {
+          function successCallback(_x: number, y: number, _w: number, h: number) {
             const yOffset = y > 0 ? y - h / 4 : 0
             scrollViewRef.scrollTo({ y: yOffset, animated: true })
           }
         )
-        setTimeout(() => {
-          updateCurrentStep((currentStep) => {
-            const newStep = { ...currentStep }
-            newStep[key] = step
-            eventEmitter[key]?.emit('stepChange', step)
-            return newStep
-          })
-          resolve()
-        }, 200)
+        // Remove setTimeout, update immediately
+        updateCurrentStep((currentStep) => {
+          const newStep = { ...currentStep }
+          newStep[key] = step
+          eventEmitter[key]?.emit('stepChange', step)
+          return newStep
+        })
+        resolve()
       } else {
         updateCurrentStep((currentStep) => {
           const newStep = { ...currentStep }
@@ -239,7 +250,7 @@ export const TourGuideProvider = ({
       return newSteps
     })
     if (!eventEmitter[key]) {
-      eventEmitter[key] = new mitt()
+      eventEmitter[key] = mitt()
     }
   }
 

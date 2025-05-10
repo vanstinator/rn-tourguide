@@ -41,11 +41,20 @@ const AppContent = () => {
   }, [canStart]) // wait until everything is registered
 
   React.useEffect(() => {
-    eventEmitter.on('start', () => console.log('start'))
-    eventEmitter.on('stop', () => console.log('stop'))
-    eventEmitter.on('stepChange', () => console.log(`stepChange`))
-    return () => eventEmitter.off('*', null)
-  }, [])
+    if (eventEmitter) {
+      const handleOnStart = () => console.log('start')
+      const handleOnStop = () => console.log('stop')
+      const handleOnStepChange = () => console.log(`stepChange`)
+      eventEmitter.on('start', handleOnStart)
+      eventEmitter.on('stop', handleOnStop)
+      eventEmitter.on('stepChange', handleOnStepChange)
+      return () => {
+        eventEmitter.off('start', handleOnStart)
+        eventEmitter.off('stop', handleOnStop)
+        eventEmitter.off('stepChange', handleOnStepChange)
+      }
+    }
+  }, [eventEmitter])
   return (
     <View style={styles.container}>
       {/* Use TourGuideZone only to wrap */}
@@ -85,15 +94,15 @@ const AppContent = () => {
       </View>
       <View style={styles.row}>
         <TourGuideZone zone={4} shape={'circle'} tooltipBottomOffset={200}>
-          <Ionicons name='ios-add-circle' {...iconProps} />
+          <Ionicons name='add-circle' {...iconProps} />
         </TourGuideZone>
-        <Ionicons name='ios-chatbubbles' {...iconProps} />
-        <Ionicons name='ios-globe' {...iconProps} />
+        <Ionicons name='chatbubbles' {...iconProps} />
+        <Ionicons name='globe' {...iconProps} />
         <TourGuideZone zone={5}>
-          <Ionicons name='ios-navigate' {...iconProps} />
+          <Ionicons name='navigate' {...iconProps} />
         </TourGuideZone>
         <TourGuideZone zone={6} shape={'circle'}>
-          <Ionicons name='ios-rainy' {...iconProps} />
+          <Ionicons name='rainy' {...iconProps} />
         </TourGuideZone>
       </View>
       <View

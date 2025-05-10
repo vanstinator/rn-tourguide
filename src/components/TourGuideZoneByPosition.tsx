@@ -58,15 +58,17 @@ export const TourGuideZoneByPosition = ({
           borderRadiusObject,
           text,
         }}
-        style={{
-          position: 'absolute',
-          height,
-          width,
-          top,
-          right,
-          bottom,
-          left,
-        }}
+        style={
+          {
+            position: 'absolute',
+            ...(height !== undefined ? { height } : {}),
+            ...(width !== undefined ? { width } : {}),
+            ...(top !== undefined ? { top } : {}),
+            ...(right !== undefined ? { right } : {}),
+            ...(bottom !== undefined ? { bottom } : {}),
+            ...(left !== undefined ? { left } : {}),
+          } as import('react-native').StyleProp<import('react-native').ViewStyle>
+        }
       />
     </View>
   )

@@ -71,44 +71,52 @@ export class ConnectedStep extends React.Component<Props> {
 
   measure() {
     if (typeof __TEST__ !== 'undefined' && __TEST__) {
-      return new Promise((resolve) =>
-        resolve({
-          x: 0,
-          y: 0,
-          width: 0,
-          height: 0,
-        }),
-      )
+      return Promise.resolve({
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+      })
     }
-
-    return new Promise((resolve, reject) => {
-      const measure = () => {
-        // Wait until the wrapper element appears
-        if (this.wrapper && this.wrapper.measure) {
-          const { borderRadius } = this.props
-          this.wrapper.measure(
-            (
-              _ox: number,
-              _oy: number,
-              width: number,
-              height: number,
-              x: number,
-              y: number,
-            ) =>
-              resolve({
-                x: borderRadius ? x + borderRadius : x,
-                y,
-                width: borderRadius ? width - borderRadius * 2 : width,
-                height,
-              }),
-            reject,
-          )
-        } else {
-          requestAnimationFrame(measure)
-        }
+    // Try synchronous measurement if available (Fabric)
+    if (this.wrapper && this.wrapper.measureSync) {
+      try {
+        const { borderRadius } = this.props
+        const [x, y, width, height] = this.wrapper.measureSync()
+        return Promise.resolve({
+          x: borderRadius ? x + borderRadius : x,
+          y,
+          width: borderRadius ? width - borderRadius * 2 : width,
+          height,
+        })
+      } catch (e) {
+        // fallback to async
       }
-
-      requestAnimationFrame(measure)
+    }
+    // Fallback: async measure
+    return new Promise((resolve, reject) => {
+      if (this.wrapper && this.wrapper.measure) {
+        const { borderRadius } = this.props
+        this.wrapper.measure(
+          (
+            _ox: number,
+            _oy: number,
+            width: number,
+            height: number,
+            x: number,
+            y: number,
+          ) =>
+            resolve({
+              x: borderRadius ? x + borderRadius : x,
+              y,
+              width: borderRadius ? width - borderRadius * 2 : width,
+              height,
+            }),
+          reject,
+        )
+      } else {
+        reject(new Error('No wrapper or measure method available'))
+      }
     })
   }
 
