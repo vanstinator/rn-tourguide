@@ -179,16 +179,17 @@ export const TourGuideProvider = ({
           function successCallback(_x: number, y: number, _w: number, h: number) {
             const yOffset = y > 0 ? y - h / 4 : 0
             scrollViewRef.scrollTo({ y: yOffset, animated: true })
+            setTimeout(() => {
+              updateCurrentStep((currentStep) => {
+                const newStep = { ...currentStep }
+                newStep[key] = step
+                eventEmitter[key]?.emit('stepChange', step)
+                return newStep
+              })
+              resolve()
+            }, 300)
           }
         )
-        // Remove setTimeout, update immediately
-        updateCurrentStep((currentStep) => {
-          const newStep = { ...currentStep }
-          newStep[key] = step
-          eventEmitter[key]?.emit('stepChange', step)
-          return newStep
-        })
-        resolve()
       } else {
         updateCurrentStep((currentStep) => {
           const newStep = { ...currentStep }
