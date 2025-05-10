@@ -229,32 +229,15 @@ export class Modal extends React.Component<ModalProps, State> {
     const minY = this.props.safeAreaInsets.top
     const maxY = layout.height! - tooltipHeight - this.props.safeAreaInsets.bottom
     let toValue
-    // Debug: log all relevant values
-    const debugInfo: Record<string, any> = {
-      objTop: obj.top,
-      objHeight: obj.height,
-      tooltipHeight,
-      verticalPosition,
-      minY,
-      maxY,
-    };
+
     if (verticalPosition === 'bottom') {
       const desired = obj.top + obj.height + MARGIN
       toValue = Math.min(Math.max(desired, minY), maxY)
-      debugInfo.desired = desired;
-      debugInfo.toValue = toValue;
-      debugInfo.gap = toValue - (obj.top + obj.height);
     } else {
       const tooltipBottomOffset = this.props.currentStep?.tooltipBottomOffset || 0;
       const desired = obj.top - MARGIN - tooltipHeight - tooltipBottomOffset;
       toValue = Math.min(Math.max(desired, minY), maxY)
-      debugInfo.desired = desired;
-      debugInfo.toValue = toValue;
-      debugInfo.gap = obj.top - (toValue + tooltipHeight);
     }
-    // Print debug info
-    // eslint-disable-next-line no-console
-    console.log('TOOLTIP DEBUG:', debugInfo);
 
     const translateAnim = Animated.timing(this.state.tooltipTranslateY, {
       toValue,
