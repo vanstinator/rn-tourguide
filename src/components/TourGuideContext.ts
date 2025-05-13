@@ -17,7 +17,7 @@ export interface ITourGuideContext {
   registerStep?(key: string, step: IStep): void
   unregisterStep?(key: string, stepName: string): void
   getCurrentStep?(key: string): IStep | undefined
-  start?(key: string, fromStep?: number, scrollRef?: React.RefObject<ScrollView> | null): void
+  start?(key: string, fromStep?: number, scrollRef?: React.RefObject<ScrollView | null> | null): void
   stop?(key: string): void
 }
 

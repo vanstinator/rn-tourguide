@@ -13,7 +13,7 @@ export const useTourGuideController = (tourKey?: string) => {
 
   const key = tourKey ?? '_default'
 
-  const _start = (fromStep?: number, scrollRef?: React.RefObject<ScrollView> | null) => {
+  const _start = (fromStep?: number, scrollRef?: React.RefObject<ScrollView | null> | null) => {
     if (setTourKey) {
       setTourKey(key)
     }

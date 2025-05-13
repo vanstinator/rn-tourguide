@@ -12,7 +12,7 @@ import { TooltipProps } from './Tooltip'
 const { useMemo, useEffect, useState, useRef } = React
 
 // Type that can be either a ScrollView or a ref to one
-type ScrollViewRef = ScrollView | React.RefObject<ScrollView>
+type ScrollViewRef = ScrollView | React.RefObject<ScrollView | null>
 
 /*
 This is the maximum wait time for the steps to be registered before starting the tutorial
@@ -270,7 +270,7 @@ export const TourGuideProvider = ({
 
   const getCurrentStep = (key: string) => currentStep[key]
 
-  const start = async (key: string, fromStep?: number, _scrollRef: React.RefObject<ScrollView> | null = null) => {
+  const start = async (key: string, fromStep?: number, _scrollRef: React.RefObject<ScrollView | null> | null = null) => {
     if (_scrollRef !== null) {
       setScrollRef(_scrollRef)
     }
