@@ -17,7 +17,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 declare var __TEST__: boolean
 
-
 export interface ModalProps {
   ref: any
   currentStep?: IStep
@@ -217,8 +216,6 @@ export class Modal extends React.Component<ModalProps, State> {
       left: 0,
     }
 
-
-
     if (horizontalPosition === 'left') {
       tooltip.right = Math.max(layout.width! - (obj.left + obj.width), 0)
       tooltip.right =
@@ -244,6 +241,15 @@ export class Modal extends React.Component<ModalProps, State> {
       const desired = obj.top - MARGIN - tooltipHeight - tooltipBottomOffset;
       toValue = Math.min(Math.max(desired, minY), maxY)
     }
+
+    // Animate from a consistent direction based on verticalPosition
+    let startValue
+    if (verticalPosition === 'bottom') {
+      startValue = toValue + 30
+    } else {
+      startValue = toValue - 30
+    }
+    this.state.tooltipTranslateY.setValue(startValue)
 
     const translateAnim = Animated.timing(this.state.tooltipTranslateY, {
       toValue,
