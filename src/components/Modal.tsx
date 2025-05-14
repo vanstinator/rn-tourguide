@@ -169,7 +169,17 @@ export class Modal extends React.Component<ModalProps, State> {
   handleTooltipLayout = (event: LayoutChangeEvent) => {
     const { height } = event.nativeEvent.layout
     if (this.state.tooltipHeight !== height) {
-      this.setState({ tooltipHeight: height })
+      this.setState({ tooltipHeight: height }, () => {
+        // Recalculate position after height is updated
+        if (this.state.currentStep && this.state.layout && this.state.position && this.state.size) {
+          this._animateMove({
+            top: (this.state.position as ValueXY).y ?? 0,
+            left: (this.state.position as ValueXY).x ?? 0,
+            width: (this.state.size as ValueXY).x ?? 0,
+            height: (this.state.size as ValueXY).y ?? 0,
+          })
+        }
+      })
     }
   }
 
@@ -207,11 +217,7 @@ export class Modal extends React.Component<ModalProps, State> {
       left: 0,
     }
 
-    if (verticalPosition === 'bottom') {
-      tooltip.top = obj.top + obj.height + MARGIN
-    } else {
-      // tooltip.bottom = layout.height! - (obj.top - MARGIN)
-    }
+
 
     if (horizontalPosition === 'left') {
       tooltip.right = Math.max(layout.width! - (obj.left + obj.width), 0)
