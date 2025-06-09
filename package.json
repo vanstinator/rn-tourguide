@@ -73,7 +73,7 @@
     "mem": "^10.0.0",
     "memoize-one": "6.0.0",
     "mitt": "~3.0.1",
-    "react-native-safe-area-context": "^5.4.0"
+    "react-native-safe-area-context": "~5.4.0"
   },
   "resolutions": {
     "logkitty": "^0.7.1",

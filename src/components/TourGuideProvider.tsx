@@ -53,7 +53,7 @@ export const TourGuideProvider = ({
   dismissOnPress = false,
   preventOutsideInteraction = false,
 }: TourGuideProviderProps) => {
-  const [scrollRef, setScrollRef] = useState<ScrollViewRef | null>(null)
+  const [scrollRefs, setScrollRefs] = useState<Ctx<ScrollViewRef | null>>({ _default: null })
   const [tourKey, setTourKey] = useState<string | '_default'>('_default')
   const [visible, updateVisible] = useState<Ctx<boolean | undefined>>({
     _default: false,
@@ -163,7 +163,7 @@ export const TourGuideProvider = ({
         return resolve()
       }
 
-      const scrollViewRef = scrollRef && 'current' in scrollRef ? scrollRef.current : scrollRef
+      const scrollViewRef = scrollRefs[key] && 'current' in scrollRefs[key] ? scrollRefs[key].current : scrollRefs[key]
       const wrapperRef = step.wrapper && 'current' in step.wrapper ? step.wrapper.current : step.wrapper
 
       const wrapperNode = findNodeHandle(wrapperRef)
@@ -272,7 +272,7 @@ export const TourGuideProvider = ({
 
   const start = async (key: string, fromStep?: number, _scrollRef: React.RefObject<ScrollView | null> | null = null) => {
     if (_scrollRef !== null) {
-      setScrollRef(_scrollRef)
+      setScrollRefs((prev) => ({ ...prev, [key]: _scrollRef }))
     }
 
     const currentStep = fromStep
