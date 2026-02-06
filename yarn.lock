@@ -2099,13 +2099,15 @@ __metadata:
     react: "npm:19.1.0"
     react-dom: "npm:19.1.0"
     react-native: "npm:0.81.5"
-    react-native-safe-area-context: "npm:~5.6.0"
+    react-native-safe-area-context: "npm:5.6.0"
     react-native-svg: "npm:15.12.1"
     react-native-web: "npm:^0.21.2"
     react-test-renderer: "npm:>=16.8.0"
     tslint: "npm:^6.1.3"
     tslint-config-prettier: "npm:^1.18.0"
     typescript: "npm:~5.9.2"
+  peerDependencies:
+    react-native-safe-area-context: ">=5.0.0"
   languageName: unknown
   linkType: soft
 
@@ -7015,13 +7017,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-safe-area-context@npm:~5.6.0":
-  version: 5.6.2
-  resolution: "react-native-safe-area-context@npm:5.6.2"
+"react-native-safe-area-context@npm:5.6.0":
+  version: 5.6.0
+  resolution: "react-native-safe-area-context@npm:5.6.0"
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: 10c0/3c8df21a1dbac83116b9c9bd5d20b7c1bb7649ecef44a111af6fb6b237241f5f4d692189eec30a69f5701b857249257da3621b9e17165460a2bb71faac7b92ae
+  checksum: 10c0/17877475217e3b9fc75afcd28bfa287cc996e4eb8cfc698f825670596d3e93d38d28aabc32a038f5167932412c6ef632a749b1c5fe49e15bd863326643740108
   languageName: node
   linkType: hard
 
